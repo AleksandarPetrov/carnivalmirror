@@ -102,3 +102,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# PyCharm stuff
+.idea
+core
+
+# Test artifacts
+carnivalmirror/tests/*png
+!carnivalmirror/tests/test_image_*png
