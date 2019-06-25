@@ -42,7 +42,8 @@ class Calibration(object):
 
         # Normalize and save the inputs
         self.aspect_ratio = width / height
-        if len(np.array(K).flatten()) == 4:
+        K = np.array(K)
+        if len(K.flatten()) == 4:
             fx, fy, cx, cy = (K[0], K[1], K[2], K[3])
         elif K.shape == (3, 3):
             fx, fy, cx, cy = (K[0, 0], K[1, 1], K[0, 2], K[1, 2])
@@ -187,8 +188,8 @@ class Calibration(object):
             preserving_undistort_y: The preserving undistortion map for the y-axis
 
         Raises:
-            RuntimeError: If the region of validity self.valid_region is only zeros or if the cropped image
-                is smaller than min_cropped_size
+            RuntimeError: If the region of validity self.valid_region is only zeros, if the cropped image
+                is smaller than min_cropped_size, or if the aspect ratio cannot be preserved
             ValueError: If only one of map_width and map_height is None
         """
 
@@ -204,8 +205,8 @@ class Calibration(object):
         # rectification while maintaining the original aspect ratio
         target_aspect_ratio = float(width) / float(height)
 
-        valid_dict = {'x': (self.valid_region[0] + 1, self.valid_region[0] + self.valid_region[2] - 1),
-                    'y': (self.valid_region[1] + 1, self.valid_region[1] + self.valid_region[3] - 1)}
+        valid_dict = {'x': (self.valid_region[0], self.valid_region[0] + self.valid_region[2]),
+                    'y': (self.valid_region[1], self.valid_region[1] + self.valid_region[3])}
         valid_aspect_ratio = float(valid_dict['x'][1] - valid_dict['x'][0]) / (valid_dict['y'][1] - valid_dict['y'][0])
 
         # If the image is taller than it should, cut its legs and head
@@ -225,8 +226,13 @@ class Calibration(object):
             }
 
         # Make sure the cropped aspect ratio is the same as the target one
+        if cropped_region['x'][1] - cropped_region['x'][0] < 10 or (cropped_region['y'][1] - cropped_region['y'][0]) < 10:
+            raise RuntimeError("The cropped region is too small: %s" % str(cropped_region))
+
         cropped_aspect_ratio = float(cropped_region['x'][1] - cropped_region['x'][0]) / (cropped_region['y'][1] - cropped_region['y'][0])
-        assert(abs(cropped_aspect_ratio-target_aspect_ratio)<0.1)
+        if np.abs(cropped_aspect_ratio-target_aspect_ratio)>0.1:
+            raise RuntimeError("The aspect ratio could not be preserved. Target: %.05f, Cropped: %.05f" %
+                               (target_aspect_ratio, cropped_aspect_ratio))
 
         # Check if the cropped image fits the minimum requirements
         if min_cropped_size is not None and \

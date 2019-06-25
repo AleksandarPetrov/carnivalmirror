@@ -110,3 +110,9 @@ core
 # Test artifacts
 carnivalmirror/tests/*png
 !carnivalmirror/tests/test_image_*png
+
+# Generated example images
+example_images/*jpg
+!example_images/*Camera_5.jpg
+
+

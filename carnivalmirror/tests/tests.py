@@ -118,8 +118,8 @@ class TestCalibrationMethods(unittest.TestCase):
 
         # Do the preserving on the direct image
         target_aspect_ratio = float(rect_direct.shape[1]) / float(rect_direct.shape[0])
-        validROI = {'x': (validPixROI[0] + 1, validPixROI[0] + validPixROI[2] - 1),
-                    'y': (validPixROI[1] + 1, validPixROI[1] + validPixROI[3] - 1)}
+        validROI = {'x': (validPixROI[0], validPixROI[0] + validPixROI[2]),
+                    'y': (validPixROI[1], validPixROI[1] + validPixROI[3])}
         valid_aspect_ratio = float(validROI['x'][1] - validROI['x'][0]) / (validROI['y'][1] - validROI['y'][0])
 
         # If the image is taller than it should, cut its legs and head
@@ -155,7 +155,7 @@ class TestCalibrationMethods(unittest.TestCase):
         overlayed = cv2.addWeighted(rect_ours_gray, 0.5, resized_direct_gray, 0.5, 0)
 
         cv2.imwrite(path_here("test_rectified_preserving_with_ground_truth.png"),overlayed)
-        self.assertTrue(np.allclose(rect_ours_gray, resized_direct_gray, rtol=10, atol=10))
+        self.assertTrue(np.allclose(rect_ours_gray, resized_direct_gray, rtol=15, atol=15))
 
     def test_appd(self):
         perturbed_K = self.test_image_K * 0.98
@@ -385,7 +385,7 @@ class TestUniformAPPDSampler(unittest.TestCase):
         # UniformAPPDSampler
         t = time.time()
         sampler = UniformAPPDSampler(ranges=self.ranges, cal_width=self.width, cal_height=self.height,
-                                     reference=self.reference, temperature=5.0, appd_range_bins=10,
+                                     reference=self.reference, temperature=5.0, appd_range_bins=20,
                                      appd_range_dicovery_samples=HISTOGRAM_TEST_SAMPLES,
                                      width=int(self.width / 4), height=int(self.height / 4),
                                      min_cropped_size=(int(self.width / 4 / 1.5), int(self.height / 4 / 1.5)))

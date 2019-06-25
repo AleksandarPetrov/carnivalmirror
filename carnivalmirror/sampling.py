@@ -90,6 +90,10 @@ class ParallelBufferedSampler(Sampler):
 
         # The function that each thread runs
         def thread_fun(sampler, buffer, stop):
+            # Make sure each copy has a unique numpy seed
+            np.random.seed(multiprocessing.current_process().pid)
+
+            # Keep filling the buffer until requested to stop
             while not stop.is_set():
                 try:
                     buffer.put(sampler.next(), block=True, timeout=1.0)
@@ -227,9 +231,9 @@ class UniformAPPDSampler(Sampler):
 
         # Make sure that all bins have at least 1 sample. This ensures that all bins can be sampled and the procedure
         # won't end up in a deadlock
-        for b in hist:
+        for b_idx, b in enumerate(hist):
             if not b > 0:
-                raise RuntimeError("A bin with zero elements encountered. Try increasing the sample number or decreasing the bin number.")
+                bin_edges = bin_edges[:b_idx+1]
 
         # Make the attributes that store the bins
         self.APPDrange = (bin_edges[0], bin_edges[-1])
