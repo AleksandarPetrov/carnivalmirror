@@ -190,7 +190,7 @@ class UniformAPPDSampler(Sampler):
     """
 
     def __init__(self, ranges, cal_width, cal_height, reference, temperature=1, appd_range_dicovery_samples=1000,
-                 appd_range_bins=10, **kwargs):
+                 appd_range_bins=10, init_jobs=1, **kwargs):
         """Initializes a UniformAPPDSampler object
 
         Args:
@@ -204,6 +204,7 @@ class UniformAPPDSampler(Sampler):
             appd_range_dicovery_samples: Number of samples obtained in order to find the
                 range of achievable APPD values, default is 1000
             appd_range_bins: Number of histogram bins, default is 10
+            init_jobs: Number of jobs used for the initialization sampling, default is 1
             **kwargs: Arguments to be passed to the appd method of Calibration (width and height required)
                 map_width, map_height, interpolation)
         Raises:
@@ -226,8 +227,13 @@ class UniformAPPDSampler(Sampler):
 
         # Find the approximate range of normalized APPD values achievable by the ranges provided by sampling
         ps = ParameterSampler(ranges=self.ranges, cal_width=self.cal_width, cal_height=self.cal_height)
+        # Parallelize if requested
+        if init_jobs > 1:
+            ps = ParallelBufferedSampler(sampler=ps, n_jobs=init_jobs, buffer_size=init_jobs*4)
         hist, bin_edges = ps.histogram(reference=reference, n_samples=appd_range_dicovery_samples,
                                        n_bins=appd_range_bins, normalized=True, **kwargs)
+        if init_jobs > 1:
+            ps.stop()
 
         # Make sure that all bins have at least 1 sample. This ensures that all bins can be sampled and the procedure
         # won't end up in a deadlock

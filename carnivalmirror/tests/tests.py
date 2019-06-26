@@ -335,7 +335,7 @@ class TestUniformAPPDSampler(unittest.TestCase):
         # UniformAPPDSampler
         t = time.time()
         sampler = UniformAPPDSampler(ranges=self.ranges, cal_width=self.width, cal_height=self.height,
-                                     reference=self.reference, temperature=5.0, appd_range_bins=10,
+                                     reference=self.reference, temperature=5.0, appd_range_bins=10, init_jobs=4,
                                      appd_range_dicovery_samples=HISTOGRAM_TEST_SAMPLES,
                                      width=int(self.width / 4), height=int(self.height / 4),
                                      min_cropped_size=(int(self.width / 4 / 1.5), int(self.height / 4 / 1.5)))
@@ -360,7 +360,7 @@ class TestUniformAPPDSampler(unittest.TestCase):
         # UniformAPPDSampler
         t = time.time()
         sampler = UniformAPPDSampler(ranges=self.ranges, cal_width=self.width, cal_height=self.height,
-                                     reference=self.reference, temperature=5.0, appd_range_bins=10,
+                                     reference=self.reference, temperature=5.0, appd_range_bins=10, init_jobs=4,
                                      appd_range_dicovery_samples=HISTOGRAM_TEST_SAMPLES,
                                      width=int(self.width / 4), height=int(self.height / 4),
                                      min_cropped_size=(int(self.width / 4 / 1.5), int(self.height / 4 / 1.5)))
@@ -386,7 +386,7 @@ class TestUniformAPPDSampler(unittest.TestCase):
         t = time.time()
         sampler = UniformAPPDSampler(ranges=self.ranges, cal_width=self.width, cal_height=self.height,
                                      reference=self.reference, temperature=5.0, appd_range_bins=20,
-                                     appd_range_dicovery_samples=HISTOGRAM_TEST_SAMPLES,
+                                     init_jobs=4, appd_range_dicovery_samples=HISTOGRAM_TEST_SAMPLES,
                                      width=int(self.width / 4), height=int(self.height / 4),
                                      min_cropped_size=(int(self.width / 4 / 1.5), int(self.height / 4 / 1.5)))
         sampler = ParallelBufferedSampler(sampler=sampler, n_jobs=4, buffer_size=50)
