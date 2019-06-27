@@ -6,6 +6,7 @@ import multiprocessing
 import queue
 
 import numpy as np
+from typing import Any
 
 from .calibration import Calibration
 
@@ -79,6 +80,9 @@ class ParallelBufferedSampler(Sampler):
         self.init_sampler = sampler
         self.n_jobs = n_jobs
         self.buffer_size = buffer_size
+
+        # Copy all the attributes of the sampler to the ParallelBufferedSampler
+        self.__dict__ = sampler.__dict__.copy()
 
         # Make a copy of the sampler for every thread
         self.samplers = list()
