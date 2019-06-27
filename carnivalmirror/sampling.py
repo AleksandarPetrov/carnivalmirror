@@ -98,9 +98,14 @@ class ParallelBufferedSampler(Sampler):
             np.random.seed(multiprocessing.current_process().pid)
 
             # Keep filling the buffer until requested to stop
+            # Convoluted because we want to catch when 'stop' becomes set
+            # and at the same time we don't want to sample unnecessarily
+            new_sample = None
             while not stop.is_set():
+                if new_sample is None:
+                    new_sample = sampler.next()
                 try:
-                    buffer.put(sampler.next(), block=True, timeout=1.0)
+                    buffer.put(new_sample, block=True, timeout=0.5)
                 except queue.Full:
                     pass
 
