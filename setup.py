@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='carnivalmirror',
-      version='0.4.1',
+      version='0.5.0',
       description='A tool to handle and simulate pinhole camera miscalibrations',
       url='https://github.com/AleksandarPetrov/carnivalmirror',
       author='Aleksandar Petrov',
