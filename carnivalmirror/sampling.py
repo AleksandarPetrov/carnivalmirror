@@ -6,7 +6,6 @@ import multiprocessing
 import queue
 
 import numpy as np
-from typing import Any
 
 from .calibration import Calibration
 
@@ -34,7 +33,7 @@ class Sampler(object):
         """Should be implemented by children classes"""
         raise NotImplementedError
 
-    def histogram(self, reference, n_samples=1000, n_bins=10, **kwargs):
+    def histogram(self, reference, n_samples=1000, n_bins=10, return_values=False, **kwargs):
         """Obtains a histogram of APPD values
 
         Samples n_samples times from the ranges of the parameters, calculates their
@@ -44,11 +43,13 @@ class Sampler(object):
             reference: A reference Calibration object
             n_samples: Number of samples, default is 100
             n_bins: Number of histogram bins, default is 10
+            return_values: If True, will also return the sampled APPD values
             **kwargs: Arguments to be passed to the appd method of Calibration (width and height required)
 
         Returns:
-            hist: The values of the histogram (number of occurances)
-            bin_edges: The bin edges (length(hist)+1).
+            hist: The values of the histogram (number of occurrences)
+            bin_edges: The bin edges (length(hist)+1)
+            appd_values: The sampled values (only if `return_values` is set to True)
 
         """
 
@@ -63,8 +64,11 @@ class Sampler(object):
                 except RuntimeError as e:
                     # If the parameter set is bad (no valid region or too small) sample again
                     pass
-
-        return np.histogram(APPD_values, bins=n_bins)
+        if return_values:
+            r = np.histogram(APPD_values, bins=n_bins)
+            return r[0], r[1], APPD_values
+        else:
+            return np.histogram(APPD_values, bins=n_bins)
 
 class ParallelBufferedSampler(Sampler):
     """ParallelBufferedSampler paralelizes and buffers a given sampler"""
@@ -106,6 +110,7 @@ class ParallelBufferedSampler(Sampler):
                     new_sample = sampler.next()
                 try:
                     buffer.put(new_sample, block=True, timeout=0.5)
+                    new_sample = None
                 except queue.Full:
                     pass
 
@@ -126,8 +131,6 @@ class ParallelBufferedSampler(Sampler):
         time.sleep(1.5)
         for i in range(len(self.processes)):
             self.processes[i].terminate()
-
-
 
 
 class ParameterSampler(Sampler):

@@ -280,9 +280,9 @@ class TestParameterSampler(unittest.TestCase):
 
         # 1/16 resolution
         t = time.time()
-        bins, hist_edges = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES,
-                                             n_bins=20, width=int(self.width/4), height=int(self.height/4), normalized=True,
-                                             min_cropped_size=(int(self.width/4/1.5), int(self.height/4/1.5)))
+        bins, hist_edges, appds = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES, return_values=True,
+                                                    n_bins=20, width=int(self.width/4), height=int(self.height/4), normalized=True,
+                                                    min_cropped_size=(int(self.width/4/1.5), int(self.height/4/1.5)))
         print("ParameterSampler time for %d normalized samples (1/16 res): %.02f, AVG: %.04f" %
               (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
         plt.bar(hist_edges[:-1], bins, width=np.diff(hist_edges), ec="k", align="edge", label="1/16 resolution", alpha=0.5)
@@ -290,6 +290,14 @@ class TestParameterSampler(unittest.TestCase):
         plt.grid()
         plt.legend()
         plt.savefig(path_here('ParameterSampler_test_histogram_normalized.png'))
+        plt.close()
+
+
+        # Save a plot that shows the sample sequence
+        plt.figure()
+        plt.plot(appds, 'x')
+        plt.grid()
+        plt.savefig(path_here('ParameterSampler_test_histogram_normalized_sequence.png'))
         plt.close()
 
 
@@ -342,8 +350,9 @@ class TestUniformAPPDSampler(unittest.TestCase):
         print("UniformAPPDSampler initialization time: %.02f" % (time.time()-t))
 
         t = time.time()
-        bins, hist_edges = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES,
-                                             n_bins=10, width=int(self.width/4), height=int(self.height/4), normalized=True)
+        bins, hist_edges, appds = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES, return_values=True,
+                                                    n_bins=10, width=int(self.width/4), height=int(self.height/4),
+                                                    normalized=True)
         print("UniformAPPDSampler time for %d normalized samples (1/16 res): %.02f, AVG: %.04f" %
               (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
         plt.bar(hist_edges[:-1], bins, width=np.diff(hist_edges), ec="k", align="edge", label="UniformAPPDSampler", alpha=0.5)
@@ -351,6 +360,13 @@ class TestUniformAPPDSampler(unittest.TestCase):
         plt.grid()
         plt.legend()
         plt.savefig(path_here('UniformAPPDSampler_test_histogram_normalized.png'))
+        plt.close()
+
+        # Save a plot that shows the sample sequence
+        plt.figure()
+        plt.plot(appds, 'x')
+        plt.grid()
+        plt.savefig(path_here('UniformAPPDSampler_test_histogram_normalized_sequence.png'))
         plt.close()
 
     def test_ParallelBufferedSampler(self):
@@ -368,8 +384,9 @@ class TestUniformAPPDSampler(unittest.TestCase):
         print("ParallelBufferedSampler with UniformAPPDSampler initialization time: %.02f" % (time.time()-t))
 
         t = time.time()
-        bins, hist_edges = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES,
-                                             n_bins=10, width=int(self.width/4), height=int(self.height/4), normalized=True)
+        bins, hist_edges, appds = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES, return_values=True,
+                                                    n_bins=10, width=int(self.width/4), height=int(self.height/4),
+                                                    normalized=True)
         print("ParallelBufferedSampler with UniformAPPDSampler time for %d normalized samples (1/16 res): %.02f, AVG: %.04f" %
               (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
         plt.bar(hist_edges[:-1], bins, width=np.diff(hist_edges), ec="k", align="edge", label="UniformAPPDSampler", alpha=0.5)
@@ -377,6 +394,13 @@ class TestUniformAPPDSampler(unittest.TestCase):
         plt.grid()
         plt.legend()
         plt.savefig(path_here('ParallelBufferedSampler_UniformAPPDSampler_test_histogram_normalized_small.png'))
+        plt.close()
+
+        # Save a plot that shows the sample sequence
+        plt.figure()
+        plt.plot(appds, 'x')
+        plt.grid()
+        plt.savefig(path_here('ParallelBufferedSampler_UniformAPPDSampler_test_histogram_normalized_sequence.png'))
         plt.close()
 
     def test_hist_from_returned_objects(self):
@@ -405,6 +429,13 @@ class TestUniformAPPDSampler(unittest.TestCase):
         sampler.stop()
         plt.grid()
         plt.savefig(path_here('ParallelBufferedSampler_UniformAPPDSampler_test_hist_from_returned_objects.png'))
+        plt.close()
+
+        # Save a plot that shows the sample sequence (useful for debugging bad random initialization)
+        plt.figure()
+        plt.plot(appds, 'x')
+        plt.grid()
+        plt.savefig(path_here('ParallelBufferedSampler_UniformAPPDSampler_test_hist_from_returned_objects_sequence.png'))
         plt.close()
 
 if __name__ == "__main__":
