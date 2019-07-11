@@ -41,7 +41,7 @@ class Calibration(object):
         """
 
         # Normalize and save the inputs
-        self.aspect_ratio = width / height
+        self.aspect_ratio = float(width) / height
         K = np.array(K)
         if len(K.flatten()) == 4:
             fx, fy, cx, cy = (K[0], K[1], K[2], K[3])
