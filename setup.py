@@ -2,7 +2,7 @@ from setuptools import setup
 from sphinx.setup_command import BuildDoc
 cmdclass = {'build_sphinx': BuildDoc}
 
-version='0.5.0'
+version='0.5.1'
 
 setup(name='carnivalmirror',
       version=version,
