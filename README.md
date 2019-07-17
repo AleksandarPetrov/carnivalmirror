@@ -1,4 +1,6 @@
 # Carnival Mirror
+[![PyPI version](https://badge.fury.io/py/carnivalmirror.svg)](https://badge.fury.io/py/carnivalmirror) [![Documentation Status](https://readthedocs.org/projects/carnivalmirror/badge/?version=latest)](https://carnivalmirror.readthedocs.io/en/latest/?badge=latest)
+
 Carnival Mirror is a tool to simulate pinhole camera miscalibrations
 
 # Installation
