@@ -46,6 +46,8 @@ If you are having issues, please let us know.
    :maxdepth: 2
    :caption: Contents:
 
+   modules
+
 
 
 Indices and tables

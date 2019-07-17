@@ -9,10 +9,16 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../..'))
+# sys.path.insert(0, os.path.abspath('../../build/lib/carnivalmirror'))
+# sys.path.insert(0, os.path.abspath('../../carnivalmirror'))
+
+print(sys.path)
 
 
 # -- Project information -----------------------------------------------------
@@ -22,7 +28,8 @@ copyright = '2019, Aleksandar Petrov'
 author = 'Aleksandar Petrov'
 
 # The full version, including alpha/beta/rc tags
-release = '0.5.0'
+version = '0.5.1'
+release = version
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,7 +38,17 @@ release = '0.5.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.napoleon',
 ]
+
+# Autodocs configuration
+# autoclass_content = 'both'
+autodoc_mock_imports = ["cv2"]
+autodoc_typehints = 'signature'
+napoleon_google_docstring = True
+napoleon_use_param = False
+napoleon_use_ivar = True
+napoleon_include_init_with_doc = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -47,7 +64,7 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'pyramid'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

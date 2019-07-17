@@ -13,17 +13,17 @@ class Sampler(object):
     """Base Sampler class
 
         Attributes:
-            cal_width: The width of the image(s) for which the calibrations are
-            cal_height: The height of the image(s) for which the calibrations are
-            aspect_ratio: The calibration aspect ratio.
+            cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
+            cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
+            aspect_ratio (:obj:`float`): The calibration aspect ratio.
     """
 
     def __init__(self, cal_width, cal_height):
         """Initializes a Sampler object
 
         Args:
-            cal_width: The width of the image(s) for which the calibrations are
-            cal_height: The height of the image(s) for which the calibrations are
+            cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
+            cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
         """
         self.cal_width = cal_width
         self.cal_height = cal_height
@@ -40,22 +40,26 @@ class Sampler(object):
         APPD values with respect to a reference Calibration and builds a histogram from them.
 
         Args:
-            reference: A reference Calibration object
-            n_samples: Number of samples, default is 100
-            n_bins: Number of histogram bins, default is 10
-            return_values: If True, will also return the sampled APPD values
-            **kwargs: Arguments to be passed to the appd method of Calibration (width and height required)
+            reference (:obj:`Calibration`): A reference Calibration object
+            n_samples (:obj:`int`): Number of samples
+            n_bins (:obj:`int`): Number of histogram bins
+            return_values (:obj:`bool`): If `True`, will also return the sampled APPD values
+            **kwargs: Arguments to be passed to the `appd` method of Calibration (width and height required)
 
         Returns:
-            hist: The values of the histogram (number of occurrences)
-            bin_edges: The bin edges (length(hist)+1)
-            appd_values: The sampled values (only if `return_values` is set to True)
+            tuple: a float or a tuple containing:
+
+                hist (:obj:`numpy array`): The values of the histogram (number of occurrences)
+
+                bin_edges (:obj:`numpy array`): The bin edges `(length(hist)+1)`
+
+                appd_values (:obj:`list` of :obj:`float`): The sampled values (only if `return_values` is set to `True`)
 
         """
 
         APPD_values = list()
 
-        for i in range(n_samples):
+        for _ in range(n_samples):
             sample_obtained = False
             while not sample_obtained:
                 try:
@@ -71,14 +75,24 @@ class Sampler(object):
             return np.histogram(APPD_values, bins=n_bins)
 
 class ParallelBufferedSampler(Sampler):
-    """ParallelBufferedSampler paralelizes and buffers a given sampler"""
+    """ParallelBufferedSampler paralelizes and buffers a given sampler.
+
+    Creates several background treads that sample :class:`~.Calibration` objects and maintain a
+    buffer of a specified size.
+
+    In order to stop the threads (and gracefully exit the parent process) you
+    have to use the :meth:`~.ParallelBufferedSampler.stop` method.
+
+    """
 
     def __init__(self, sampler, n_jobs=4, buffer_size=16):
         """Given an initialized sampler, abstracts its parallelization and buffering.
 
         Args:
-            sampler: A Sampler object to parallelize
-            n_jobs: Number of threads to create
+            sampler (:obj:`Sampler`): A Sampler object to parallelize
+            n_jobs (:obj:`int`): Number of threads to create
+            buffer_size (:obj:`int`): Number of calibrations to keep in the buffer
+
         """
 
         self.init_sampler = sampler
@@ -90,7 +104,7 @@ class ParallelBufferedSampler(Sampler):
 
         # Make a copy of the sampler for every thread
         self.samplers = list()
-        for i in range(n_jobs): self.samplers.append(copy.deepcopy(sampler))
+        for _ in range(n_jobs): self.samplers.append(copy.deepcopy(sampler))
 
         # Create the buffer Queue
         self.bufferQueue = multiprocessing.Queue(maxsize=buffer_size)
@@ -122,9 +136,15 @@ class ParallelBufferedSampler(Sampler):
             self.processes.append(p)
 
     def next(self):
+        """Provide the next :obj:`Calibration` from the buffer.
+
+        Returns:
+            :obj:`Calibration`: A :obj:`Calibration` object
+        """
         return self.bufferQueue.get(block=True)
 
     def stop(self):
+        """Stops the background processes that fill the buffer."""
         self.stopTrigger.set()
 
         # Give the threads a chance to shut off properly
@@ -137,24 +157,24 @@ class ParameterSampler(Sampler):
     """ParameterSampler provides uniform independent sampling within specified ranges of
     calibration parameters.
 
-        Attributes:
-            width: The width of the image(s) for which the calibrations are
-            height: The height of the image(s) for which the calibrations are
-            aspect_ratio: The calibration aspect ratio.
-            ranges: The provided sampling ranges for the calibration parameters
+    Attributes:
+        width (:obj:`int`): The width of the image(s) for which the calibrations are
+        height (:obj:`int`): The height of the image(s) for which the calibrations are
+        aspect_ratio (:obj:`float`): The calibration aspect ratio.
+        ranges (:obj:`dict`): The provided sampling ranges for the calibration parameters
     """
 
     def __init__(self, ranges, cal_width, cal_height):
         """Initializes a ParameterSampler object
 
         Args:
-            ranges: A dictionary with keys [fx, fy, cx, cy, k1, k2, p1, p2, k3] and elements tuples
+            ranges (:obj:`dict`): A dictionary with keys `[fx, fy, cx, cy, k1, k2, p1, p2, k3]` and elements tuples
                 describing the sampling range for each parameter. All intrinsic parameters must be provided.
                 Missing distortion parameters will be sampled as 0
-            cal_width: The width of the image(s) for which the calibrations are
-            cal_height: The height of the image(s) for which the calibrations are
+            cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
+            cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
         Raises:
-            ValueError: If one of [fx, fy, cx, cy] is missing from ranges
+            ValueError: If one of `[fx, fy, cx, cy]` is missing from `ranges`
         """
 
         super(ParameterSampler, self).__init__(cal_width=cal_width, cal_height=cal_height)
@@ -167,10 +187,10 @@ class ParameterSampler(Sampler):
         self.ranges = ranges
 
     def next(self):
-        """Generator method providing a randomly sampled Calibration
+        """Generator method providing a randomly sampled :obj:`Calibration`
 
         Returns:
-            A Calibration object
+            :obj:`Calibration`: A :obj:`Calibration` object
         """
 
         # Sample the values
@@ -191,14 +211,14 @@ class UniformAPPDSampler(Sampler):
     """UniformAPPDSampler provides parameter sampling that results in approximately uniform APPD distribution
 
         Attributes:
-            width: The width of the image(s) for which the calibrations are
-            height: The height of the image(s) for which the calibrations are
-            aspect_ratio: The calibration aspect ratio.
-            ranges: The provided sampling ranges for the calibration parameters
-            temperature: Temperature used for Gibbs acceptance sampling
-            reference: The reference Calibration
-            bin_edges: Marks the bin edges
-            bin_counts: Stores how many samples were generated from each bin so far
+            width (:obj:`int`): The width of the image(s) for which the calibrations are
+            height (:obj:`int`): The height of the image(s) for which the calibrations are
+            aspect_ratio (:obj:`float`): The calibration aspect ratio.
+            ranges (:obj:`dict`): The provided sampling ranges for the calibration parameters
+            temperature (:obj:`float`): Temperature used for Gibbs acceptance sampling
+            reference (:obj:`Calibration`): The reference :obj:`Calibration`
+            bin_edges (:obj:`list` of :obj:`float`): Marks the bin edges
+            bin_counts (:obj:`list` of :obj:`int`): Stores how many samples were generated from each bin so far
     """
 
     def __init__(self, ranges, cal_width, cal_height, reference, temperature=1, appd_range_dicovery_samples=1000,
@@ -206,21 +226,21 @@ class UniformAPPDSampler(Sampler):
         """Initializes a UniformAPPDSampler object
 
         Args:
-            ranges: A dictionary with keys [fx, fy, cx, cy, k1, k2, p1, p2, k3] and elements tuples
+            ranges (:obj:`dict`): A dictionary with keys `[fx, fy, cx, cy, k1, k2, p1, p2, k3]` and elements tuples
                 describing the sampling range for each parameter. All intrinsic parameters must be provided.
                 Missing distortion parameters will be sampled as 0
-            cal_width: The width of the image(s) for which the calibrations are
-            cal_height: The height of the image(s) for which the calibrations are
-            reference: A reference Calibration object
-            temperature: Temperature used for Gibbs acceptance sampling
-            appd_range_dicovery_samples: Number of samples obtained in order to find the
-                range of achievable APPD values, default is 1000
-            appd_range_bins: Number of histogram bins, default is 10
-            init_jobs: Number of jobs used for the initialization sampling, default is 1
-            **kwargs: Arguments to be passed to the appd method of Calibration (width and height required)
-                map_width, map_height, interpolation)
+            cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
+            cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
+            reference (:obj:`Calibration`): A reference :class:`~.Calibration` object
+            temperature (:obj:`float`): Temperature used for Gibbs acceptance sampling
+            appd_range_dicovery_samples (:obj:`int`): Number of samples obtained in order to find the
+                range of achievable APPD values
+            appd_range_bins (:obj:`int`): Number of histogram bins
+            init_jobs (:obj:`int`): Number of jobs used for the initialization sampling
+            **kwargs: Arguments to be passed to the appd method of :class:`~.Calibration` (`width` and `height`
+                required, optionally `map_width`, `map_height`, `interpolation`)
         Raises:
-            ValueError: If one of [fx, fy, cx, cy] is missing from ranges
+            ValueError: If one of `[fx, fy, cx, cy]` is missing from ranges
             RuntimeException: If a histogram bin with zero elements is encountered.
         """
 
@@ -260,28 +280,15 @@ class UniformAPPDSampler(Sampler):
         self.bin_edges[-1] = np.inf
         self.bin_counts = np.array([0]*(len(bin_edges)-1))
 
-    def exp_normalize(self, x):
-        """Calculates exp(x)/sum(exp(x)) with tricks for numerical stability"""
-        b = np.max(x)
-        y = np.exp(x - b)
-        probs = y / np.sum(y)
-
-        # For numerical stability, round all probabilities lower than 1e-5 to 0 and renormalize:
-        probs[np.where(probs<1e-5)[0]] = 0
-        return probs/np.sum(probs)
 
     def next(self):
         """Generator method providing a randomly sampled Calibration that results in a
         nearly uniform APPD distribution
 
-        Samples are taken uniformly but are accepted with probability -diff_with_smallest_bin/temperture. The procedure
-        uses the normalized APPD calculated for an image of height 300px, however, even if the
-        generated Calibration instances are used to calculate a not normalized APPD, the
-        unifrom distribution should be preserved.
-
+        Samples are taken uniformly but are accepted with probability `-diff_with_smallest_bin/temperture`.
 
         Returns:
-            A Calibration object
+            :obj:`Calibration`: A :obj:`Calibration` object
         """
 
         # Calculate the current acceptance probabilities

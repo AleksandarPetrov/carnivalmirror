@@ -10,16 +10,17 @@ class Calibration(object):
     parameters and enables basic computation on them.
 
     Attributes:
-        n_fx: Normalized fx intrinsic camera parameter (for height 1 pixel).
-        n_fy: Normalized fy intrinsic camera parameter (for height 1 pixel).
-        n_cx: Normalized cx intrinsic camera parameter (for height 1 pixel).
-        n_cy: Normalized cy intrinsic camera parameter (for height 1 pixel).
-        k1: The k1 radial distortion parameter.
-        k2: The k2 radial distortion parameter.
-        k3: The k3 radial distortion parameter.
-        p1: The p1 tangential distortion parameter.
-        p2: The p2 tangential distortion parameter.
-        aspect_ratio: The calibration aspect ratio.
+        n_fx (:obj:`float`): Normalized fx intrinsic camera parameter (for height 1 pixel).
+        n_fy (:obj:`float`): Normalized fy intrinsic camera parameter (for height 1 pixel).
+        n_cx (:obj:`float`): Normalized cx intrinsic camera parameter (for height 1 pixel).
+        n_cy (:obj:`float`): Normalized cy intrinsic camera parameter (for height 1 pixel).
+        k1 (:obj:`float`): The k1 radial distortion parameter.
+        k2 (:obj:`float`): The k2 radial distortion parameter.
+        k3 (:obj:`float`): The k3 radial distortion parameter.
+        p1 (:obj:`float`): The p1 tangential distortion parameter.
+        p2 (:obj:`float`): The p2 tangential distortion parameter.
+        aspect_ratio (:obj:`float`): The calibration aspect ratio.
+
     """
 
     def __init__(self, K, D, width, height):
@@ -29,15 +30,16 @@ class Calibration(object):
         and distortion coefficients.
 
         Args:
-            K: A list with the camera matrix values ordered as [fx, fy, cx, cy] or
+            K: A list with the camera matrix values ordered as `[fx, fy, cx, cy]` or
                 a 3x3 array representing a camera matrix
-            D: A list of distortion coefficients ordered as [k1, k2, p1, p2, k3], all 5
+            D: A list of distortion coefficients ordered as `[k1, k2, p1, p2, k3]`, all 5
                 coefficients should be provided
-            width: Width of the image resolution at which the camera matrix was obtained
-            height: Height of the image resolution at which the camera matrix was obtained
+            width (:obj:`int`): Width of the image resolution at which the camera matrix was obtained
+            height (:obj:`int`): Height of the image resolution at which the camera matrix was obtained
 
         Raises:
             TypeError: If any of the inputs do not match the expected types or dimensions.
+
         """
 
         # Normalize and save the inputs
@@ -82,13 +84,13 @@ class Calibration(object):
         """Calculates the camera matrix for a particular resolution.
 
         Calculates the camera matrix for an image with height (in pixels) as supplied,
-        and width equal to self.aspect_ratio*height.
+        and width equal to `self.aspect_ratio*height`.
 
         Args:
-            height: An interger representing the desired height (in pixels)
+            height (:obj:`int`): An interger representing the desired height (in pixels)
                 for the camera matrix
         Returns:
-            A 3x3 camera matrix for the desired resolution
+            numpy array: A 3x3 camera matrix for the desired resolution
         """
 
         fx = self.n_fx * height
@@ -104,7 +106,7 @@ class Calibration(object):
         """Provides the distortion coefficents.
 
         Returns:
-            A list of the 5 distortion coefficients [k1, k2, p1, p2, k3]
+            numpy array: A list of the 5 distortion coefficients `[k1, k2, p1, p2, k3]`
         """
         return np.array([self.k1, self.k2, self.p1, self.p2, self.k3])
 
@@ -115,20 +117,19 @@ class Calibration(object):
         https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
 
         Args:
-            width: Desired width for the input image
-            height: Desired height for the input image
-            map_width: Desired width for the undistortion maps,
+            width (:obj:`int`): Desired width for the input image
+            height (:obj:`int`): Desired height for the input image
+            map_width (:obj:`int`): Desired width for the undistortion maps,
                 default None and will use the input width
-            map_height: Desired height for the undistortion maps,
+            map_height (:obj:`int`): Desired height for the undistortion maps,
                 default None and will use the input height
-        interpolation: cv2 interpolation method, default is `cv2.INTER_LANCZOS4`
+            interpolation: cv2 interpolation method, default is `cv2.INTER_LANCZOS4`
 
         Returns:
-            undistort_x: The undistortion map for the x-axis
-            undistort_y: The undistortion map for the y-axis
+            (numpy array, numpy array): The undistortion maps for the x-axis and y-axis
 
         Raises:
-            ValueError: If only one of map_width and map_height is None
+            ValueError: If only one of `map_width` and `map_height` is `None`
         """
 
         # Calculate the undistorion maps, only if the previous were for a different resolution
@@ -173,24 +174,23 @@ class Calibration(object):
         resizes it up to the original size.
 
         Args:
-            width: The desired width for the input image
-            height: The desired height for the input image
-            min_cropped_size: Optional, if provided as a (width, height), will raise a RuntimeError if the
-                cropped image is smaller than this, default: None
-            map_width: The desired width for the undistortion maps,
-                default None and will use the input width
-            map_height: The desired height for the undistortion maps,
-                default None and will use the input height
-            interpolation: cv2 interpolation method, default is `cv2.INTER_LANCZOS4`
+            width (:obj:`int`): The desired width for the input image
+            height (:obj:`int`): The desired height for the input image
+            min_cropped_size (:obj:`int`): Optional, if provided as a `(width, height)` tuple, will raise `RuntimeError` if the
+                cropped image is smaller than this
+            map_width (:obj:`int`): The desired width for the undistortion maps,
+                if `None` will use the input width
+            map_height (:obj:`int`): The desired height for the undistortion maps,
+                if `None` will use the input height
+            interpolation: cv2 interpolation method
 
         Returns:
-            preserving_undistort_x: The preserving undistortion map for the x-axis
-            preserving_undistort_y: The preserving undistortion map for the y-axis
+            (numpy array, numpy array): The preserving undistortion maps for the x-axis and y-axis
 
         Raises:
-            RuntimeError: If the region of validity self.valid_region is only zeros, if the cropped image
-                is smaller than min_cropped_size, or if the aspect ratio cannot be preserved
-            ValueError: If only one of map_width and map_height is None
+            RuntimeError: If the region of validity is only zeros, if the cropped image
+                is smaller than `min_cropped_size`, or if the aspect ratio cannot be preserved
+            ValueError: If only one of `map_width` and `map_height` is None
         """
 
         # Make sure the maps are calculated for the right resolution
@@ -268,23 +268,25 @@ class Calibration(object):
         """Rectify an image.
 
         Args:
-            image: The input image. Should be `cv2`-compatible. Should be `[width, height, channels]`
-            interpolation: cv2 interpolation method, default is `cv2.INTER_LANCZOS4`
-            quiet: If True, won't show a warning if the aspect ratio of the image is not the same
-                as the one of the calibration given during the initialization, default is False
-            strict: If True, will raise a `ValueError` exception if there is aspect ratio mismatch
-            result_width: Desired width for the rectified image, default None and will use the input height
-            result_height: Desired height for the rectified image, default None and will use the input height
-            mode: Can be `standard` or `preserving`, chooses between standard undistortion (with `undistortion_maps`) and
+            image (:obj:`numpy array`): The input image. Should be `cv2`-compatible. Should be `[width, height, channels]`
+            interpolation: cv2 interpolation method
+            quiet (:obj:`bool`): If `True`, won't show a warning if the aspect ratio of the image is not the same
+                as the one of the calibration given during the initialization
+            strict (:obj:`bool`): If `True`, will raise a `ValueError` exception if there is aspect ratio mismatch
+            result_width (:obj:`int`): Desired width for the rectified image, if `None` will use the input height
+            result_height (:obj:`int`): Desired height for the rectified image, if `None` will use the input height
+            mode (:obj:`str`): Can be `standard` or `preserving`, chooses between standard undistortion (with `undistortion_maps`) and
                 undistortion with cropped and rescaled vaild aspect-ratio-preserving region
                 (with `undistortion_maps_preserving`).
-            min_cropped_size: Passed to `undistortion_maps_preserving` if `mode` is set to `preserving`
+            min_cropped_size (:obj:`tuple` of :obj:`int`): Passed to `undistortion_maps_preserving` if
+                `mode` is set to `preserving`
 
         Returns:
-            rectified_image: The resulting image after rectification
+            numpy array: The resulting image after rectification
+
         Raises:
-            ValueError: See information about the `strict` parameter. Also raised if only one of map_width and
-                map_height is None
+            ValueError: See information about the `strict` parameter. Also raised if only one of `map_width` and
+                `map_height` is `None`
         """
         image = np.array(image)
         image_height = image.shape[0]
@@ -327,28 +329,33 @@ class Calibration(object):
         """Calculate the Average Pixel Position Difference.
 
         Args:
-            reference: Another Calibration object relative to which the metric will be computed
-            width: Desired width for the rectified image, a base for calculating the metric
-            height: Desired height for the rectified image, a base for calculating the metric
-            interpolation: cv2 interpolation method, default is `cv2.INTER_LANCZOS4`
-            quiet: If True, won't show a warning if the aspect ratio of the image is not the same
-                as the one of the calibration given during the initialization, default is False
-            strict: If True, will raise a `ValueError` exception if there is aspect ratio mismatch
-            min_cropped_size: Passed to `undistortion_maps_preserving`
-            return_diff_map: If True, returns the difference map, default is False
-            map_width: Width for the undistortion map, if None, width is used. Use the same aspect ratio
+            reference (:obj:`Calibration`): Another Calibration object relative to which the metric will be computed
+            width (:obj:`int`): Desired width for the rectified image, a base for calculating the metric
+            height (:obj:`int`): Desired height for the rectified image, a base for calculating the metric
+            interpolation: `cv2` interpolation method
+            quiet (:obj:`bool`): If `True`, won't show a warning if the aspect ratio of the image is not the same
+                as the one of the calibration given during the initialization
+            strict (:obj:`bool`): If `True`, will raise a `ValueError` exception if there is aspect ratio mismatch
+            min_cropped_size (:obj:`tuple` of :obj:`int`): Passed to `undistortion_maps_preserving`
+            return_diff_map (:obj:`bool`): If `True`, returns the difference map
+            map_width (:obj:`int`): Width for the undistortion map, if `None`, `width`is used. Use the same aspect ratio
                 for the maps as for the rectified image
-            map_height: Height for the undistortion map, if None, height is used. Use the same aspect ratio
+            map_height (:obj:`int`): Height for the undistortion map, if `None`, `height` is used. Use the same aspect ratio
                 for the maps as for the rectified image
-            normalized: If True, normalizes by the map diagonal
+            normalized (:obj:`bool`): If `True`, normalizes by the map diagonal
 
         Returns:
-            appd: The Average Pixel Position Difference between this calibration and the reference,
-                calculated for the provided resolution
-            diff_map: If `return_diff_map` is True returns the difference map
+            tuple: a float or a tuple containing:
+
+                appd (:obj:`float`): The Average Pixel Position Difference between this calibration and the reference,
+                calculated for the provided resolution.
+
+                diff_map (:obj:`numpy array`): If `return_diff_map` is `True` also returns the difference map
+
         Raises:
             ValueError: See information about the `strict` parameter
-            RuntimeError: See information for undistortion_maps_preserving
+            RuntimeError: See information for `undistortion_maps_preserving`
+
         """
 
         if map_height == None: map_height=height
@@ -383,9 +390,3 @@ class Calibration(object):
             return appd, diff_map
         else:
             return appd
-
-
-
-
-
-
