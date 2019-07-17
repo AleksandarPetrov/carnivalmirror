@@ -46,7 +46,7 @@ extensions = [
 
 # Autodocs configuration
 # autoclass_content = 'both'
-autodoc_mock_imports = ["cv2"]
+autodoc_mock_imports = ["cv2", "numpy"]
 autodoc_typehints = 'signature'
 napoleon_google_docstring = True
 napoleon_use_param = False
