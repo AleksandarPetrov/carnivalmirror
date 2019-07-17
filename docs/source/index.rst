@@ -43,10 +43,11 @@ Support
 If you are having issues, please let us know.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
-   modules
+   index
+   carnivalmirror
 
 
 
