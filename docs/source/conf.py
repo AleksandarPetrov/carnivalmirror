@@ -28,7 +28,7 @@ copyright = '2019, Aleksandar Petrov'
 author = 'Aleksandar Petrov'
 
 # The full version, including alpha/beta/rc tags
-version = '0.5.3'
+version = '0.5.4'
 release = version
 
 
