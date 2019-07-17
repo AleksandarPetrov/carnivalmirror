@@ -1,6 +1,4 @@
 from setuptools import setup
-from sphinx.setup_command import BuildDoc
-cmdclass = {'build_sphinx': BuildDoc}
 
 version='0.5.2'
 
@@ -17,13 +15,5 @@ setup(name='carnivalmirror',
       package_data={
             'carnivalmirror': ['test_image_*.png'],
       },
-      test_suite='carnivalmirror.tests',
-      command_options={
-        'build_sphinx': {
-            'project': 'CarnivalMirror',
-            'copyright': ('setup.py', '2019, Aleksandar Petrov'),
-            'author': ('setup.py', 'Aleksandar Petrov'),
-            'version': ('setup.py', version),
-            'release': ('setup.py', version),
-            'source_dir': ('setup.py', 'docs')}}
+      test_suite='carnivalmirror.tests'
       )
