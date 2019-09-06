@@ -170,7 +170,8 @@ class ParameterSampler(Sampler):
         Args:
             ranges (:obj:`dict`): A dictionary with keys `[fx, fy, cx, cy, k1, k2, p1, p2, k3]` and elements tuples
                 describing the sampling range for each parameter. All intrinsic parameters must be provided.
-                Missing distortion parameters will be sampled as 0
+                Missing distortion parameters will be sampled as 0. Parameters can be kept constant if both limits 
+                are the same.
             cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
             cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
         Raises:
@@ -228,7 +229,8 @@ class UniformAPPDSampler(Sampler):
         Args:
             ranges (:obj:`dict`): A dictionary with keys `[fx, fy, cx, cy, k1, k2, p1, p2, k3]` and elements tuples
                 describing the sampling range for each parameter. All intrinsic parameters must be provided.
-                Missing distortion parameters will be sampled as 0
+                Missing distortion parameters will be sampled as 0. Parameters can be kept constant if both limits 
+                are the same.
             cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
             cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
             reference (:obj:`Calibration`): A reference :class:`~.Calibration` object
