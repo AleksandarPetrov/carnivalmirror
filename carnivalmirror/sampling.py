@@ -222,7 +222,7 @@ class UniformAPPDSampler(Sampler):
             bin_counts (:obj:`list` of :obj:`int`): Stores how many samples were generated from each bin so far
     """
 
-    def __init__(self, ranges, cal_width, cal_height, reference, temperature=1, appd_range_dicovery_samples=1000,
+    def __init__(self, ranges, cal_width, cal_height, width, height, reference, temperature=1, appd_range_dicovery_samples=1000,
                  appd_range_bins=10, init_jobs=1, **kwargs):
         """Initializes a UniformAPPDSampler object
 
@@ -233,14 +233,15 @@ class UniformAPPDSampler(Sampler):
                 are the same.
             cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
             cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
+            width (:obj:`int`): The width of samples you want to generate (passed to the appd method of :class:`~.Calibration`)
+            height (:obj:`int`): The height of samples you want to generate (passed to the appd method of :class:`~.Calibration`)
             reference (:obj:`Calibration`): A reference :class:`~.Calibration` object
             temperature (:obj:`float`): Temperature used for Gibbs acceptance sampling
             appd_range_dicovery_samples (:obj:`int`): Number of samples obtained in order to find the
                 range of achievable APPD values
             appd_range_bins (:obj:`int`): Number of histogram bins
             init_jobs (:obj:`int`): Number of jobs used for the initialization sampling
-            **kwargs: Arguments to be passed to the appd method of :class:`~.Calibration` (`width` and `height`
-                required, optionally `map_width`, `map_height`, `interpolation`)
+            **kwargs: Optional arguments to be passed to the appd method of :class:`~.Calibration` (`map_width`, `map_height`, `interpolation`)
         Raises:
             ValueError: If one of `[fx, fy, cx, cy]` is missing from ranges
             RuntimeException: If a histogram bin with zero elements is encountered.
