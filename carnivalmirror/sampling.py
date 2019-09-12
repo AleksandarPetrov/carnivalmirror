@@ -85,22 +85,26 @@ class ParallelBufferedSampler(Sampler):
 
     """
 
-    def __init__(self, sampler, n_jobs=4, buffer_size=16):
+    def __init__(self, sampler, n_jobs=4, buffer_size=16, cache_size=0):
         """Given an initialized sampler, abstracts its parallelization and buffering.
 
         Args:
             sampler (:obj:`Sampler`): A Sampler object to parallelize
             n_jobs (:obj:`int`): Number of threads to create
             buffer_size (:obj:`int`): Number of calibrations to keep in the buffer
+            cache_size (:obj:`int`): Number of objects to keep in a cache in order to all fast sampling.
 
         """
 
+        # Copy all the attributes of the sampler to the ParallelBufferedSampler
+        self.__dict__ = sampler.__dict__.copy()
+
+        # Store the init arguments
         self.init_sampler = sampler
         self.n_jobs = n_jobs
         self.buffer_size = buffer_size
-
-        # Copy all the attributes of the sampler to the ParallelBufferedSampler
-        self.__dict__ = sampler.__dict__.copy()
+        self.cache_size = cache_size
+        self.cache = list()
 
         # Make a copy of the sampler for every thread
         self.samplers = list()
@@ -141,7 +145,33 @@ class ParallelBufferedSampler(Sampler):
         Returns:
             :obj:`Calibration`: A :obj:`Calibration` object
         """
-        return self.bufferQueue.get(block=True)
+        try:
+            # Make sure we don't wait only if there's something in the cache to pickup
+            if len(self.cache) > 0:
+                block = False
+            else:
+                block = True
+
+            new_sample = self.bufferQueue.get(block=block)
+
+            # Add to the cache if desired:
+            # print("cache_size", self.cache_size)
+            if self.cache_size > 0:
+                # print("ADDING TO CACHE")
+                new_sample_cp = copy.deepcopy(new_sample)
+
+                # Delete the maps to preserve memory
+                new_sample_cp.delete_maps()
+                self.cache.append(new_sample_cp)
+
+                # Maintain the maximum cache size
+                while len(self.cache) > self.cache_size:
+                    del self.cache[0]
+
+        except queue.Empty: # If we cannot provide a real unique new sample give one from the cache
+            new_sample = self.cache[np.random.randint(0, len(self.cache))]
+
+        return new_sample
 
     def stop(self):
         """Stops the background processes that fill the buffer."""
@@ -170,7 +200,7 @@ class ParameterSampler(Sampler):
         Args:
             ranges (:obj:`dict`): A dictionary with keys `[fx, fy, cx, cy, k1, k2, p1, p2, k3]` and elements tuples
                 describing the sampling range for each parameter. All intrinsic parameters must be provided.
-                Missing distortion parameters will be sampled as 0. Parameters can be kept constant if both limits 
+                Missing distortion parameters will be sampled as 0. Parameters can be kept constant if both limits
                 are the same.
             cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
             cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
@@ -207,6 +237,73 @@ class ParameterSampler(Sampler):
 
         return Calibration(K=K, D=D, width=self.cal_width, height=self.cal_height)
 
+class TriangularParameterSampler(Sampler):
+    """ParameterSampler provides uniform independent sampling within specified ranges of
+    calibration parameters.
+
+    Attributes:
+        width (:obj:`int`): The width of the image(s) for which the calibrations are
+        height (:obj:`int`): The height of the image(s) for which the calibrations are
+        aspect_ratio (:obj:`float`): The calibration aspect ratio.
+        ranges (:obj:`dict`): The provided sampling ranges for the calibration parameters
+    """
+
+    def __init__(self, ranges, reference, cal_width, cal_height):
+        """Initializes a ParameterSampler object
+
+        Args:
+            ranges (:obj:`dict`): A dictionary with keys `[fx, fy, cx, cy, k1, k2, p1, p2, k3]` and elements tuples
+                describing the sampling range for each parameter. All intrinsic parameters must be provided.
+                Missing distortion parameters will be sampled as 0. Parameters can be kept constant if both limits
+                are the same.
+            reference (:obj:`Calibration`): A reference object that will  be used to determine the mode of the
+                triangular distribution for each axis
+            cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
+            cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
+        Raises:
+            ValueError: If one of `[fx, fy, cx, cy]` is missing from `ranges`
+        """
+
+        super(TriangularParameterSampler, self).__init__(cal_width=cal_width, cal_height=cal_height)
+
+        # Validate the ranges
+        for key in ['fx', 'fy', 'cx', 'cy']:
+            if key not in ranges: raise ValueError("Key %s missing in ranges" % key)
+        for key in ['k1', 'k2', 'p1', 'p2', 'k3']:
+            if key not in ranges: ranges[key] = (0, 0)
+        self.ranges = ranges
+
+        ref_K = reference.get_K(height=cal_height)
+        self.mode = {'fx': ref_K[0,0],
+                     'fy': ref_K[1,1],
+                     'cx': ref_K[0,2],
+                     'cy': ref_K[1,2],
+                     'k1': reference.k1,
+                     'k2': reference.k2,
+                     'p1': reference.p1,
+                     'p2': reference.p2,
+                     'k3': reference.k3}
+
+    def next(self):
+        """Generator method providing a randomly sampled :obj:`Calibration`
+
+        Returns:
+            :obj:`Calibration`: A :obj:`Calibration` object
+        """
+
+        # Sample the values
+        sample = dict()
+        for key in self.ranges:
+            sample[key] = np.random.triangular(self.ranges[key][0], self.mode[key]+1e-10, self.ranges[key][1]+2e-10)
+
+        # Construct a Calibration object
+        K = np.array([[sample['fx'],    0.0,            sample['cx']],
+                      [0.0,             sample['fy'],   sample['cy']],
+                      [0.0,             0.0,            1.0         ]])
+        D = np.array([sample['k1'], sample['k2'], sample['p1'], sample['p2'], sample['k3']])
+
+        return Calibration(K=K, D=D, width=self.cal_width, height=self.cal_height)
+
 
 class UniformAPPDSampler(Sampler):
     """UniformAPPDSampler provides parameter sampling that results in approximately uniform APPD distribution
@@ -223,13 +320,13 @@ class UniformAPPDSampler(Sampler):
     """
 
     def __init__(self, ranges, cal_width, cal_height, reference, temperature=1, appd_range_dicovery_samples=1000,
-                 appd_range_bins=10, init_jobs=1, **kwargs):
+                 appd_range_bins=10, init_jobs=1, sampler='uniform', **kwargs):
         """Initializes a UniformAPPDSampler object
 
         Args:
             ranges (:obj:`dict`): A dictionary with keys `[fx, fy, cx, cy, k1, k2, p1, p2, k3]` and elements tuples
                 describing the sampling range for each parameter. All intrinsic parameters must be provided.
-                Missing distortion parameters will be sampled as 0. Parameters can be kept constant if both limits 
+                Missing distortion parameters will be sampled as 0. Parameters can be kept constant if both limits
                 are the same.
             cal_width (:obj:`int`): The width of the image(s) for which the calibrations are
             cal_height (:obj:`int`): The height of the image(s) for which the calibrations are
@@ -239,6 +336,7 @@ class UniformAPPDSampler(Sampler):
                 range of achievable APPD values
             appd_range_bins (:obj:`int`): Number of histogram bins
             init_jobs (:obj:`int`): Number of jobs used for the initialization sampling
+            sampler (:obj:`Sampler`): A type of sampler to use, 'uniform' or 'triangular'
             **kwargs: Arguments to be passed to the appd method of :class:`~.Calibration` (`width` and `height`
                 required, optionally `map_width`, `map_height`, `interpolation`)
         Raises:
@@ -251,6 +349,18 @@ class UniformAPPDSampler(Sampler):
         self.temperature = temperature
         self.reference = reference
         self.kwargs = kwargs
+        self.sampler = sampler
+        if self.sampler == 'triangular':
+            ref_K = reference.get_K(height=cal_height)
+            self.mode = {'fx': ref_K[0,0],
+                         'fy': ref_K[1,1],
+                         'cx': ref_K[0,2],
+                         'cy': ref_K[1,2],
+                         'k1': reference.k1,
+                         'k2': reference.k2,
+                         'p1': reference.p1,
+                         'p2': reference.p2,
+                         'k3': reference.k3}
 
         # Validate the ranges
         for key in ['fx', 'fy', 'cx', 'cy']:
@@ -310,7 +420,12 @@ class UniformAPPDSampler(Sampler):
 
                 sample = dict()
                 for key in self.ranges:
-                    sample[key] = np.random.uniform(self.ranges[key][0], self.ranges[key][1])
+                    if self.sampler == 'uniform':
+                        sample[key] = np.random.uniform(self.ranges[key][0], self.ranges[key][1])
+                    elif self.sampler == 'triangular':
+                        sample[key] = np.random.triangular(self.ranges[key][0], self.mode[key]+1e-10, self.ranges[key][1]+2e-10)
+                    else:
+                        raise Exception('Type of sampler not supported')
 
                 # Construct a Calibration object
                 K = np.array([[sample['fx'], 0.0, sample['cx']],
@@ -339,8 +454,3 @@ class UniformAPPDSampler(Sampler):
                 self.bin_counts[appd_in_bin] += 1
 
         return c
-
-
-
-
-

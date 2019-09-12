@@ -390,3 +390,14 @@ class Calibration(object):
             return appd, diff_map
         else:
             return appd
+
+    def delete_maps(self):
+        """
+        Deletes the stored maps in order to reduce the memory footprint of the object.
+        """
+
+        self._size_used_for_calculations = None
+        self.new_camera_matrix = None
+        self.valid_region = None
+        self.undistort_x = None
+        self.undistort_y = None

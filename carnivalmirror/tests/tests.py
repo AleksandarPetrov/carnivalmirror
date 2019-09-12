@@ -13,7 +13,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from carnivalmirror.calibration import Calibration
-from carnivalmirror.sampling import ParameterSampler, UniformAPPDSampler, ParallelBufferedSampler
+from carnivalmirror.sampling import ParameterSampler, TriangularParameterSampler, UniformAPPDSampler, ParallelBufferedSampler
 
 HISTOGRAM_TEST_SAMPLES = 2000
 
@@ -323,6 +323,80 @@ class TestParameterSampler(unittest.TestCase):
         plt.savefig(path_here('ParameterSampler_test_histogram_normalized_sequence.png'))
         plt.close()
 
+class TestTriangularParameterSampler(unittest.TestCase):
+
+    def setUp(self):
+        # Load an image an image and its calibration parameters
+        self.test_image = cv2.imread(path_here('test_image_before.png'))
+        self.test_image_D = np.array([-0.2967039649743125, 0.06795775093662262, 0.0008927768064001824,
+                                      -0.001327854648098482, 0.0])
+        self.test_image_K = np.array([336.7755634193813, 0.0, 333.3575643300718, 0.0, 336.02729840829176,
+                                      212.77376312080065, 0.0, 0.0, 1.0]).reshape((3, 3))
+        self.width = self.test_image.shape[1]
+        self.height = self.test_image.shape[0]
+        self.ranges = { 'fx': (0.95*336.7755634193813, 1.05*336.7755634193813),
+                        'fy': (0.95*336.02729840829176, 1.05*336.02729840829176),
+                        'cx': (0.95*333.3575643300718, 1.05*333.3575643300718),
+                        'cy': (0.95*212.77376312080065, 1.05*212.77376312080065),
+                        'k1': (1.05*-0.2967039649743125, 0.95*-0.2967039649743125),
+                        'k2': (0.95*0.06795775093662262, 1.05*0.06795775093662262),
+                        'p1': (0.95*0.0008927768064001824, 1.05*0.0008927768064001824),
+                        'p2': (1.05*-0.001327854648098482, 0.95*-0.001327854648098482),
+                        'k3': (0.0, 0.0)}
+
+        # Initialize a reference calibration object
+        self.reference = Calibration(K=self.test_image_K, D=self.test_image_D,
+                                     width=self.test_image.shape[1], height=self.test_image.shape[0])
+
+    def test_histogram(self):
+        sampler = TriangularParameterSampler(ranges=self.ranges, cal_width=self.width, cal_height=self.height, reference=self.reference)
+        t = time.time()
+        bins, hist_edges = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES,
+                                             n_bins=20, width=self.width, height=self.height,
+                                             min_cropped_size=(int(self.width/1.5), int(self.height/1.5)))
+        print("TriangularParameterSampler time for %d samples  (full res): %.02f, AVG: %.04f" %
+               (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
+        plt.figure()
+        plt.bar(hist_edges[:-1], bins, width=np.diff(hist_edges), ec="k", align="edge")
+        plt.grid()
+        plt.savefig(path_here('TriangularParameterSampler_test_histogram.png'))
+        plt.close()
+
+    def test_histogram_normalized(self):
+        sampler = TriangularParameterSampler(ranges=self.ranges, cal_width=self.width, cal_height=self.height, reference=self.reference)
+
+        # Full resolution
+        t = time.time()
+        bins, hist_edges = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES,
+                                             n_bins=20, width=self.width, height=self.height, normalized=True,
+                                             min_cropped_size=(int(self.width/1.5), int(self.height/1.5)))
+        print("TriangularParameterSampler time for %d normalized samples (full res): %.02f, AVG: %.04f" %
+              (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
+        plt.figure()
+        plt.bar(hist_edges[:-1], bins, width=np.diff(hist_edges), ec="k", align="edge", label="full resolution", alpha=0.5)
+
+        # 1/16 resolution
+        t = time.time()
+        bins, hist_edges, appds = sampler.histogram(self.reference, n_samples=HISTOGRAM_TEST_SAMPLES, return_values=True,
+                                                    n_bins=20, width=int(self.width/4), height=int(self.height/4), normalized=True,
+                                                    min_cropped_size=(int(self.width/4/1.5), int(self.height/4/1.5)))
+        print("TriangularParameterSampler time for %d normalized samples (1/16 res): %.02f, AVG: %.04f" %
+              (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
+        plt.bar(hist_edges[:-1], bins, width=np.diff(hist_edges), ec="k", align="edge", label="1/16 resolution", alpha=0.5)
+
+        plt.grid()
+        plt.legend()
+        plt.savefig(path_here('TriangularParameterSampler_test_histogram_normalized.png'))
+        plt.close()
+
+
+        # Save a plot that shows the sample sequence
+        plt.figure()
+        plt.plot(appds, 'x')
+        plt.grid()
+        plt.savefig(path_here('TriangularParameterSampler_test_histogram_normalized_sequence.png'))
+        plt.close()
+
 
 class TestUniformAPPDSampler(unittest.TestCase):
 
@@ -460,6 +534,121 @@ class TestUniformAPPDSampler(unittest.TestCase):
         plt.grid()
         plt.savefig(path_here('ParallelBufferedSampler_UniformAPPDSampler_test_hist_from_returned_objects_sequence.png'))
         plt.close()
+
+    def test_compare_noncached_and_cached_ParallelBufferedSampler(self):
+        plt.figure()
+
+        # UniformAPPDSampler
+        sampler = UniformAPPDSampler(ranges=self.ranges, cal_width=self.width, cal_height=self.height,
+                                     reference=self.reference, temperature=5.0, appd_range_bins=20,
+                                     init_jobs=4, appd_range_dicovery_samples=HISTOGRAM_TEST_SAMPLES,
+                                     width=int(self.width / 4), height=int(self.height / 4),
+                                     min_cropped_size=(int(self.width / 4 / 1.5), int(self.height / 4 / 1.5)))
+        t = time.time()
+
+        # NONCACHED -----------------------------------------
+        noncached_sampler = ParallelBufferedSampler(sampler=sampler, n_jobs=4, buffer_size=50)
+        print("Non-cached ParallelBufferedSampler with UniformAPPDSampler initialization time: %.02f" % (time.time()-t))
+
+        appds = list()
+        t = time.time()
+        for i in range(2*HISTOGRAM_TEST_SAMPLES):
+            # The sampler will enforce the min correct size
+            c = noncached_sampler.next()
+            appds.append(c.appd(reference=self.reference, width=self.width, height=self.height, normalized=True))
+            _ = c.rectify(image=self.test_image, mode='preserving')
+        print("Non-cached ParallelBufferedSampler with UniformAPPDSampler, APPD calculation and rectification for %d normalized samples (full res): %.02f, AVG: %.04f" %
+              (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
+        plt.hist(appds, ec="k", label='non-cached, t=%ds' % int(time.time()-t))
+        noncached_sampler.stop()
+
+        # CACHED -----------------------------------------
+        t = time.time()
+        cached_sampler = ParallelBufferedSampler(sampler=sampler, n_jobs=1, buffer_size=5, cache_size=200)
+        print("Cached ParallelBufferedSampler with UniformAPPDSampler initialization time: %.02f" % (time.time()-t))
+
+        appds = list()
+        t = time.time()
+        for i in range(2*HISTOGRAM_TEST_SAMPLES):
+            # The sampler will enforce the min correct size
+            c = cached_sampler.next()
+            appds.append(c.appd(reference=self.reference, width=self.width, height=self.height, normalized=True))
+            _ = c.rectify(image=self.test_image, mode='preserving')
+        print("Cached ParallelBufferedSampler with UniformAPPDSampler, APPD calculation and rectification for %d normalized samples (full res): %.02f, AVG: %.04f" %
+              (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
+        plt.hist(appds, ec="k", label='cached, t=%ds' % int(time.time()-t))
+        cached_sampler.stop()
+
+        # ----------------------------------------------
+
+        plt.grid()
+        plt.legend()
+        plt.savefig(path_here('non_cached_vs_cached_ParallelBufferedSampler.png'))
+        plt.close()
+
+        plt.figure()
+        plt.plot(appds, 'x')
+        plt.grid()
+        plt.savefig(path_here('non_cached_vs_cached_ParallelBufferedSampler_sequence.png'))
+        plt.close()
+
+    def test_compare_noncached_and_cached_TriangularParallelBufferedSampler(self):
+        plt.figure()
+
+        # UniformAPPDSampler
+        sampler = UniformAPPDSampler(ranges=self.ranges, cal_width=self.width, cal_height=self.height, sampler='triangular',
+                                     reference=self.reference, temperature=5.0, appd_range_bins=20,
+                                     init_jobs=4, appd_range_dicovery_samples=HISTOGRAM_TEST_SAMPLES,
+                                     width=int(self.width / 4), height=int(self.height / 4),
+                                     min_cropped_size=(int(self.width / 4 / 1.5), int(self.height / 4 / 1.5)))
+        t = time.time()
+
+        # # NONCACHED -----------------------------------------
+        # noncached_sampler = ParallelBufferedSampler(sampler=sampler, n_jobs=4, buffer_size=50)
+        # print("Non-cached TriangularParallelBufferedSampler with UniformAPPDSampler initialization time: %.02f" % (time.time()-t))
+        #
+        # appds = list()
+        # t = time.time()
+        # for i in range(2*HISTOGRAM_TEST_SAMPLES):
+        #     # The sampler will enforce the min correct size
+        #     c = noncached_sampler.next()
+        #     appds.append(c.appd(reference=self.reference, width=self.width, height=self.height, normalized=True))
+        #     _ = c.rectify(image=self.test_image, mode='preserving')
+        # print("Non-cached TriangularParallelBufferedSampler with UniformAPPDSampler, APPD calculation and rectification for %d normalized samples (full res): %.02f, AVG: %.04f" %
+        #       (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
+        # plt.hist(appds, ec="k", label='non-cached, t=%ds' % int(time.time()-t))
+        # noncached_sampler.stop()
+
+        # CACHED -----------------------------------------
+        t = time.time()
+        cached_sampler = ParallelBufferedSampler(sampler=sampler, n_jobs=1, buffer_size=5, cache_size=200)
+        print("Cached TriangularParallelBufferedSampler with UniformAPPDSampler initialization time: %.02f" % (time.time()-t))
+
+        appds = list()
+        t = time.time()
+        for i in range(2*HISTOGRAM_TEST_SAMPLES):
+            # The sampler will enforce the min correct size
+            c = cached_sampler.next()
+            appds.append(c.appd(reference=self.reference, width=self.width, height=self.height, normalized=True))
+            _ = c.rectify(image=self.test_image, mode='preserving')
+        print("Cached TriangularParallelBufferedSampler with UniformAPPDSampler, APPD calculation and rectification for %d normalized samples (full res): %.02f, AVG: %.04f" %
+              (HISTOGRAM_TEST_SAMPLES, time.time()-t, (time.time()-t)/HISTOGRAM_TEST_SAMPLES))
+        plt.hist(appds, ec="k", label='cached, t=%ds' % int(time.time()-t))
+        cached_sampler.stop()
+
+        # ----------------------------------------------
+
+        plt.grid()
+        plt.legend()
+        plt.savefig(path_here('non_cached_vs_cached_TriangularParallelBufferedSampler.png'))
+        plt.close()
+
+        plt.figure()
+        plt.plot(appds, 'x')
+        plt.grid()
+        plt.savefig(path_here('non_cached_vs_cached_TriangularParallelBufferedSampler_sequence.png'))
+        plt.close()
+
 
 if __name__ == "__main__":
     unittest.main()
