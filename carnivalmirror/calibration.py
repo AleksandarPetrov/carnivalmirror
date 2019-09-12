@@ -384,7 +384,7 @@ class Calibration(object):
 
         # Apply normalization if requested
         if normalized:
-            appd /= np.sqrt(map_width**2 + map_height**2)
+            appd /= np.sqrt(width**2 + height**2)
 
         if return_diff_map:
             return appd, diff_map

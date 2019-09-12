@@ -15,10 +15,6 @@ import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../..'))
-# sys.path.insert(0, os.path.abspath('../../build/lib/carnivalmirror'))
-# sys.path.insert(0, os.path.abspath('../../carnivalmirror'))
-
-print(sys.path)
 
 
 # -- Project information -----------------------------------------------------

@@ -226,6 +226,29 @@ class TestCalibrationMethods(unittest.TestCase):
                                                         interpolation=cv2.INTER_LANCZOS4),
                                     rtol = 1e-1, atol = 1e-1))
 
+    def test_normaized_appd_map_resolution_invariance(self):
+        perturbed_K = self.test_image_K * 0.98
+        perturbed_D = self.test_image_D * 1.02
+        perturbed_calibration = Calibration(K=perturbed_K, D=perturbed_D,
+                                            width=self.test_image.shape[1], height=self.test_image.shape[0])
+
+        appd_full, dm_full = perturbed_calibration.appd(self.calibration,
+                                                        height=self.test_image.shape[0], width=self.test_image.shape[1],
+                                                        interpolation=cv2.INTER_LANCZOS4, min_cropped_size=None,
+                                                        return_diff_map=True, normalized=True)
+
+        appd_half, dm_half = perturbed_calibration.appd(self.calibration,
+                                                        height=int(self.test_image.shape[0]),
+                                                        width=int(self.test_image.shape[1]),
+                                                        interpolation=cv2.INTER_LANCZOS4, min_cropped_size=None,
+                                                        return_diff_map=True, map_width=int(self.test_image.shape[1]/2),
+                                                        map_height=int(self.test_image.shape[0]/2), normalized=True)
+
+        self.assertAlmostEqual(appd_full, appd_half, places=3)
+        self.assertTrue(np.allclose(dm_full, cv2.resize(dm_half, (dm_full.shape[1], dm_full.shape[0]),
+                                                        interpolation=cv2.INTER_LANCZOS4),
+                                    rtol = 1e-1, atol = 1e-1))
+
 class TestParameterSampler(unittest.TestCase):
 
     def setUp(self):
