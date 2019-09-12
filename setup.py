@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version='0.5.4'
+version='0.6.0'
 
 setup(name='carnivalmirror',
       version=version,
