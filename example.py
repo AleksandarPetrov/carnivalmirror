@@ -45,7 +45,7 @@ ranges = {'fx': (0.95 * K[0,0], 1.05 * K[0,0]),
 #                       ParameterSampler
 
 # Create a ParameterSampler:
-# sampler = ParameterSampler(ranges=ranges, cal_width=width, cal_height=height)
+# sampler = cm.ParameterSampler(ranges=ranges, cal_width=width, cal_height=height)
 
 # Create a UniformAPPDSampler
 sampler = cm.UniformAPPDSampler(ranges=ranges, cal_width=width, cal_height=height, reference=reference,
