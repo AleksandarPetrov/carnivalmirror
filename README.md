@@ -21,4 +21,4 @@ A number of unit tests are packaged. These can be run with `python setup.py test
 Some examples of projects that use this library are:
 
 - [Learning Camera Miscalibration Detection](https://github.com/ethz-asl/camera_miscalib_detection), an [ICRA 2020 paper](https://arxiv.org/abs/2005.11711) by the [Autonomous Systems Lab](https://asl.ethz.ch/) at ETH Zürich.
-- The [Duckietown](duckietown.org) self-driving car [simulator environment for OpenAI Gym](https://github.com/duckietown/gym-duckietown)
+- The [Duckietown](https://duckietown.org) self-driving car [simulator environment for OpenAI Gym](https://github.com/duckietown/gym-duckietown)
